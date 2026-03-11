@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matchday ⚽</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #0c1220;
+    color: #f1f5f9;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-8px);
+    padding: 10px 22px; border-radius: 12px; color: #fff; font-weight: 700;
+    font-size: 13px; z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    white-space: nowrap; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.success { background: #16a34a; }
+  #toast.error   { background: #dc2626; }
+  #toast.info    { background: #2563eb; }
+
+  /* ── Overlay / Modal ── */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.active { display: flex; }
+  .modal {
+    background: #131f35; border-radius: 20px; padding: 28px;
+    max-width: 380px; width: 100%;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; flex-direction: column; gap: 12px; text-align: center;
+  }
+  .modal-icon { font-size: 42px; margin-bottom: 4px; }
+  .modal h2 { font-size: 19px; font-weight: 800; font-family: 'Syne', sans-serif; color: #f1f5f9; }
+  .modal p  { color: #64748b; font-size: 13px; line-height: 1.5; }
+  .modal strong { color: #fbbf24; }
+
+  /* ── Promotion banner ── */
+  #promo-banner {
+    display: none; background: linear-gradient(90deg,#14532d,#166534);
+    padding: 11px 16px; align-items: center; gap: 10px;
+    color: #dcfce7; font-size: 13px; font-weight: 500;
+  }
+  #promo-banner.active { display: flex; }
+  #promo-banner button {
+    background: none; border: none; color: #86efac;
+    cursor: pointer; font-size: 18px; margin-left: auto; flex-shrink: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    background: rgba(12,18,32,0.96);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-inner {
+    max-width: 640px; margin: 0 auto; padding: 12px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { display: flex; align-items: center; gap: 9px; }
+  .logo-text { font-size: 19px; font-weight: 800; font-family: 'Syne', sans-serif; letter-spacing: -0.3px; }
+  .nav { display: flex; gap: 7px; }
+  .nav-btn {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #94a3b8; border-radius: 9px; padding: 6px 13px;
+    cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit;
+    transition: background 0.15s;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.09); }
+  .nav-btn.gm-active { color: #86efac; border-color: rgba(34,197,94,0.3); }
+
+  /* ── Main ── */
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  /* ── Views ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Inputs / Buttons ── */
+  input, textarea, select {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 11px 13px; color: #f1f5f9;
+    font-size: 14px; width: 100%; font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  input:focus, textarea:focus { outline: none; border-color: rgba(34,197,94,0.45); background: rgba(255,255,255,0.08); }
+  textarea { resize: vertical; min-height: 68px; }
+  label { display: block; color: #475569; font-size: 11px; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .btn-primary {
+    background: linear-gradient(135deg,#16a34a,#15803d); color: #fff;
+    border: none; border-radius: 11px; padding: 12px 20px;
+    cursor: pointer; font-size: 14px; font-weight: 700; width: 100%;
+    font-family: inherit; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary {
+    background: rgba(255,255,255,0.07); color: #94a3b8;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 11px; padding: 12px 20px;
+    cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; font-family: inherit;
+  }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn-primary, .btn-row .btn-secondary { flex: 1; }
+  button:active { transform: scale(0.97); }
+
+  .back-btn {
+    background: none; border: none; color: #475569; cursor: pointer;
+    font-size: 14px; font-family: inherit; padding: 4px 6px;
+  }
+  .back-btn:hover { color: #94a3b8; }
+
+  /* ── Cards / Sections ── */
+  .card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .card-title { font-size: 18px; font-weight: 800; font-family: 'Syne', sans-serif; }
+  .section {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 15px; padding: 17px; margin-bottom: 13px;
+  }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px;
+  }
+  .section-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-grid .full { grid-column: 1/-1; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ── Match Card ── */
+  .match-card {
+    background: linear-gradient(145deg,rgba(30,41,59,0.8),rgba(15,23,42,0.9));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 22px; margin-bottom: 13px;
+  }
+  .match-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .match-card-left { flex: 1; }
+  .status-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+    margin-bottom: 9px; color: #fff;
+  }
+  .match-title { font-size: 19px; font-weight: 800; font-family: 'Syne', sans-serif; line-height: 1.2; margin-bottom: 9px; }
+  .match-meta { display: flex; flex-direction: column; gap: 4px; color: #94a3b8; font-size: 13px; }
+  .match-notes { color: #64748b; font-size: 12px; margin-top: 2px; }
+  .counter-box { text-align: right; flex-shrink: 0; margin-left: 12px; padding-top: 2px; }
+  .counter-num { font-size: 36px; font-weight: 900; line-height: 1; }
+  .counter-cap { font-size: 17px; color: #334155; }
+  .counter-label { font-size: 10px; color: #475569; margin-top: 2px; }
+  .spots-left { margin-top: 10px; font-size: 12px; font-weight: 600; color: #86efac; }
+  .spots-full  { margin-top: 10px; font-size: 12px; font-weight: 600; color: #fbbf24; }
+
+  /* ── CTA area ── */
+  .cta-area { margin-bottom: 13px; }
+  .btn-register {
+    background: linear-gradient(135deg,#16a34a,#059669); color: #fff;
+    border: none; border-radius: 14px; padding: 15px;
+    cursor: pointer; font-size: 17px; font-weight: 800; width: 100%;
+    font-family: 'Syne', sans-serif;
+    box-shadow: 0 4px 20px rgba(22,163,74,0.35); letter-spacing: -0.2px;
+  }
+  .status-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 15px; border-radius: 14px; margin-bottom: 8px;
+  }
+  .status-card .sc-text { flex: 1; }
+  .sc-title { font-weight: 700; font-size: 14px; }
+  .sc-sub   { font-size: 12px; margin-top: 2px; }
+  .btn-withdraw {
+    background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3);
+    color: #fca5a5; border-radius: 8px; padding: 7px 13px;
+    cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .locked-note, .completed-note {
+    text-align: center; padding: 14px;
+    border-radius: 13px; font-weight: 600; font-size: 14px; margin-bottom: 13px;
+  }
+  .locked-note    { background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2); color: #fca5a5; }
+  .completed-note { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2); color: #c4b5fd; }
+
+  /* ── Share row ── */
+  .share-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 13px; }
+  .btn-share {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #94a3b8; border-radius: 11px; padding: 10px 12px;
+    cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; min-width: 90px;
+  }
+  .btn-share:hover { background: rgba(255,255,255,0.09); }
+  .btn-share.gm-btn { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.25); color: #a5b4fc; }
+
+  /* ── Player lists ── */
+  .list-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; overflow: hidden; margin-bottom: 13px; }
+  .list-header {
+    display: flex; justify-content: space-between; padding: 11px 15px;
+    font-size: 11px; font-weight: 700; color: #475569;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .list-header.wl { color: #d97706; }
+  .player-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.12s;
+  }
+  .player-row.me { background: rgba(34,197,94,0.07); border-left: 3px solid #22c55e; }
+  .player-row.me-wl { background: rgba(251,191,36,0.07); border-left: 3px solid #fbbf24; }
+  .p-num { width: 22px; font-size: 11px; font-weight: 700; color: #334155; flex-shrink: 0; }
+  .p-name { flex: 1; font-size: 14px; font-weight: 500; color: #e2e8f0; }
+  .p-name.me { color: #86efac; font-weight: 700; }
+  .p-name.me-wl { color: #fde68a; font-weight: 700; }
+  .p-time { color: #334155; font-size: 11px; flex-shrink: 0; }
+  .empty-list { color: #334155; font-size: 13px; text-align: center; padding: 16px 0; }
+
+  /* ── GM Panel ── */
+  .gm-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 4px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .gm-row:last-child { border-bottom: none; }
+  .gm-num { width: 34px; color: #334155; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .gm-name-col { flex: 1; }
+  .gm-name { font-size: 14px; font-weight: 600; }
+  .gm-phone { font-size: 11px; color: #fbbf24; margin-top: 1px; }
+  .gm-time-col { color: #475569; font-size: 11px; flex-shrink: 0; }
+  .btn-tiny-blue {
+    background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.25);
+    color: #a5b4fc; border-radius: 6px; padding: 4px 8px;
+    cursor: pointer; font-size: 11px; font-weight: 600; font-family: inherit; white-space: nowrap;
+  }
+  .btn-tiny-red {
+    background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.2);
+    color: #fca5a5; border-radius: 6px; padding: 4px 8px;
+    cursor: pointer; font-size: 11px; font-weight: 700; font-family: inherit;
+  }
+  .btn-sm {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    color: #cbd5e1; border-radius: 8px; padding: 8px 13px;
+    cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit;
+  }
+  .btn-green { background: #15803d; color: #fff; border: none; border-radius: 9px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: inherit; }
+  .btn-yellow { background: #b45309; color: #fff; border: none; border-radius: 9px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: inherit; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #fff; margin-left: 6px; }
+  .btn-row-sm { display: flex; gap: 7px; flex-wrap: wrap; }
+
+  /* ── Drag handle ── */
+  .drag-handle { color: #475569; font-size: 13px; cursor: grab; flex-shrink: 0; }
+  .gm-row.dragging { opacity: 0.4; }
+  .gm-row.drag-over { background: rgba(99,102,241,0.08); border-radius: 8px; }
+
+  /* ── Misc ── */
+  .page-title { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .page-title h1 { font-size: 19px; font-weight: 800; font-family: 'Syne', sans-serif; }
+  .empty-state { text-align: center; padding: 60px 20px; }
+  .empty-state .big-icon { font-size: 52px; margin-bottom: 12px; }
+  .empty-state h2 { font-size: 19px; font-weight: 800; color: #f1f5f9; margin-bottom: 6px; font-family: 'Syne', sans-serif; }
+  .empty-state p { color: #475569; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     TOAST
+============================================================ -->
+<div id="toast"></div>
+
+<!-- ============================================================
+     PROMO BANNER
+============================================================ -->
+<div id="promo-banner">
+  <span>✅ Good news — you've been moved from the waitlist and are now confirmed for the match!</span>
+  <button onclick="dismissPromo()">✕</button>
+</div>
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+
+<!-- Name prompt -->
+<div class="overlay" id="modal-name">
+  <div class="modal">
+    <div class="modal-icon">⚽</div>
+    <h2>Welcome to Matchday!</h2>
+    <p>Enter your name to register for matches. Saved for return visits.</p>
+    <div class="field"><label>Your Name</label><input id="inp-name" placeholder="e.g. David Tan" /></div>
+    <div class="field"><label>Phone (optional — only visible to GM)</label><input id="inp-phone" placeholder="+65 9xxx xxxx" type="tel" /></div>
+    <button class="btn-primary" onclick="saveProfile()">Let's go →</button>
+  </div>
+</div>
+
+<!-- Fuzzy warning -->
+<div class="overlay" id="modal-fuzzy">
+  <div class="modal">
+    <div class="modal-icon">🤔</div>
+    <h2>Duplicate name?</h2>
+    <p>A player named <strong id="fuzzy-name"></strong> is already registered. Is that you, or are you a different person?</p>
+    <button class="btn-primary" onclick="fuzzyCancel()">That's me — don't register again</button>
+    <button class="btn-secondary" onclick="fuzzyProceed()">I'm a different person</button>
+  </div>
+</div>
+
+<!-- GM Login -->
+<div class="overlay" id="modal-gm-login">
+  <div class="modal">
+    <div class="modal-icon">🔑</div>
+    <h2>Gamemaster Login</h2>
+    <p>PIN: <strong style="color:#86efac">1234</strong></p>
+    <div class="field"><input id="inp-pin" type="password" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doGMLogin()" /></div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="doGMLogin()">Unlock</button>
+      <button class="btn-secondary" onclick="closeModal('modal-gm-login')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     HEADER
+============================================================ -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span>⚽</span>
+      <span class="logo-text">Matchday</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn" id="btn-profile" onclick="showProfile()" style="display:none"></button>
+      <button class="nav-btn" id="btn-gm-toggle" onclick="onGMToggle()">🔑 GM</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ============================================================
+     MAIN
+============================================================ -->
+<main>
+
+  <!-- ── Player view ── -->
+  <div class="view active" id="view-main">
+    <!-- injected by renderMain() -->
+  </div>
+
+  <!-- ── Profile ── -->
+  <div class="view" id="view-profile">
+    <div class="card">
+      <div class="card-title">👤 Your Profile</div>
+      <div class="field"><label>Name</label><input id="edit-name" /></div>
+      <div class="field"><label>Phone (optional)</label><input id="edit-phone" type="tel" placeholder="+65 9xxx xxxx" /></div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="saveEditProfile()">Save</button>
+        <button class="btn-secondary" onclick="showView('view-main')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GM Panel ── -->
+  <div class="view" id="view-gm">
+    <div class="page-title">
+      <button class="back-btn" onclick="showView('view-main')">← Back</button>
+      <h1>🎮 Gamemaster Panel</h1>
+    </div>
+    <div id="gm-content"><!-- injected --></div>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+// ── Config ──────────────────────────────────────────────────
+const GAMEMASTER_PIN    = "1234";
+const PLAYER_CAP_DEFAULT = 5; // Low for demo; change to 24 for real use
+const STORE_KEY = "matchday_html_v1";
+
+// ── Store ────────────────────────────────────────────────────
+function getNextSaturday() {
+  const d = new Date();
+  d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7));
+  return d.toISOString().split("T")[0];
+}
+
+function defaultStore() {
+  return {
+    match: {
+      id: "match-1",
+      date: getNextSaturday(),
+      time: "19:00",
+      location: "Bishan Stadium, Field 3",
+      notes: "Bring bibs. Shin guards required. Teams split on arrival.",
+      playerCap: PLAYER_CAP_DEFAULT,
+      status: "published",
+      roster: [
+        { id: "p1", name: "Alex Tan",   phone: "+65 9111 1111", registeredAt: new Date(Date.now() - 3600000*3).toISOString() },
+        { id: "p2", name: "Ben Lim",    phone: "+65 9222 2222", registeredAt: new Date(Date.now() - 3600000*2).toISOString() },
+        { id: "p3", name: "Chris Wong", phone: "",              registeredAt: new Date(Date.now() - 3600000*1).toISOString() },
+      ],
+      waitlist: [],
+      createdAt: new Date().toISOString(),
+    }
+  };
+}
+
+function loadStore() {
+  try { const r = localStorage.getItem(STORE_KEY); if (r) return JSON.parse(r); } catch {}
+  return defaultStore();
+}
+
+function saveStore(s) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(s));
+  try { bc.postMessage("update"); } catch {}
+}
+
+let store = loadStore();
+function getMatch() { return store.match; }
+function setMatch(m) { store.match = m; saveStore(store); }
+function updateMatch(fn) { setMatch(fn(store.match)); }
+
+// ── BroadcastChannel (cross-tab sync) ────────────────────────
+let bc;
+try {
+  bc = new BroadcastChannel("matchday_html");
+  bc.onmessage = () => { store = loadStore(); fullRender(); };
+} catch {}
+window.addEventListener("storage", e => {
+  if (e.key === STORE_KEY) { store = loadStore(); fullRender(); }
+});
+
+// ── Player identity ──────────────────────────────────────────
+let playerName  = localStorage.getItem("soccerName")  || "";
+let playerPhone = localStorage.getItem("soccerPhone") || "";
+let isGM = sessionStorage.getItem("gmMode") === "1";
+
+// ── Fuzzy name matching ──────────────────────────────────────
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for (let i=1;i<=m;i++) for (let j=1;j<=n;j++)
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function findSimilarName(name, names) {
+  const nn = { jon:"john",mike:"michael",bob:"robert",bill:"william",jim:"james",
+    chris:"christopher",nick:"nicholas",alex:"alexander",dave:"david",dan:"daniel",
+    tom:"thomas",sam:"samuel",ben:"benjamin",matt:"matthew",andy:"andrew" };
+  const norm = s => nn[s]||s;
+  const n = name.trim().toLowerCase();
+  for (const reg of names) {
+    const r = reg.trim().toLowerCase();
+    if (r===n) return reg;
+    if (norm(n)===norm(r)) return reg;
+    if (levenshtein(n,r)<=2) return reg;
+  }
+  return null;
+}
+
+// ── Utilities ────────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return "";
+  return new Date(str+"T00:00:00").toLocaleDateString("en-GB",
+    {weekday:"long",day:"numeric",month:"long",year:"numeric"});
+}
+function fmtTime(iso) {
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); } catch { return ""; }
+}
+function genId() { return Math.random().toString(36).slice(2,9)+Date.now().toString(36); }
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Toast ────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type="success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.className = type+" show";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+}
+
+// ── Modals ───────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add("active"); }
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+// ── Views ────────────────────────────────────────────────────
+let currentView = "view-main";
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  currentView = id;
+}
+
+// ── Profile ──────────────────────────────────────────────────
+function saveProfile() {
+  const name  = document.getElementById("inp-name").value.trim();
+  const phone = document.getElementById("inp-phone").value.trim();
+  if (!name) return;
+  playerName = name; playerPhone = phone;
+  localStorage.setItem("soccerName",name);
+  localStorage.setItem("soccerPhone",phone);
+  closeModal("modal-name");
+  updateHeaderProfile();
+  fullRender();
+}
+function showProfile() {
+  document.getElementById("edit-name").value  = playerName;
+  document.getElementById("edit-phone").value = playerPhone;
+  showView("view-profile");
+}
+function saveEditProfile() {
+  const name  = document.getElementById("edit-name").value.trim();
+  const phone = document.getElementById("edit-phone").value.trim();
+  if (!name) return;
+  playerName = name; playerPhone = phone;
+  localStorage.setItem("soccerName",name);
+  localStorage.setItem("soccerPhone",phone);
+  showView("view-main");
+  showToast("Profile updated!");
+  updateHeaderProfile();
+  fullRender();
+}
+function updateHeaderProfile() {
+  const btn = document.getElementById("btn-profile");
+  if (playerName) { btn.style.display=""; btn.textContent="👤 "+playerName.split(" ")[0]; }
+  else btn.style.display="none";
+}
+
+// ── GM Login ─────────────────────────────────────────────────
+function onGMToggle() {
+  if (isGM) { isGM=false; sessionStorage.removeItem("gmMode"); updateGMButton(); showView("view-main"); fullRender(); }
+  else openModal("modal-gm-login");
+}
+function doGMLogin() {
+  const pin = document.getElementById("inp-pin").value;
+  if (pin===GAMEMASTER_PIN) {
+    isGM=true; sessionStorage.setItem("gmMode","1");
+    closeModal("modal-gm-login");
+    document.getElementById("inp-pin").value="";
+    updateGMButton(); showView("view-gm"); renderGM();
+  } else { showToast("Wrong PIN ❌","error"); }
+}
+function updateGMButton() {
+  const btn = document.getElementById("btn-gm-toggle");
+  if (isGM) { btn.textContent="Exit GM"; btn.classList.add("gm-active"); }
+  else       { btn.textContent="🔑 GM";   btn.classList.remove("gm-active"); }
+}
+
+// ── Promotion Banner ─────────────────────────────────────────
+function checkPromoBanner() {
+  try {
+    const b = JSON.parse(localStorage.getItem("promotionBanner")||"null");
+    if (b && b.name===playerName) {
+      document.getElementById("promo-banner").classList.add("active");
+    }
+  } catch {}
+}
+function dismissPromo() {
+  document.getElementById("promo-banner").classList.remove("active");
+  localStorage.removeItem("promotionBanner");
+}
+
+// ── Registration ─────────────────────────────────────────────
+function handleRegister() {
+  if (!playerName) { openModal("modal-name"); return; }
+  const m = getMatch();
+  if (!m||m.status==="locked"||m.status==="completed") return;
+  const roster   = m.roster||[];
+  const waitlist = m.waitlist||[];
+  const allNames = [...roster,...waitlist].map(p=>p.name).filter(n=>n!==playerName);
+  const similar  = findSimilarName(playerName, allNames);
+  if (similar) {
+    document.getElementById("fuzzy-name").textContent = similar;
+    openModal("modal-fuzzy");
+    return;
+  }
+  doRegister();
+}
+function fuzzyCancel()  { closeModal("modal-fuzzy"); }
+function fuzzyProceed() { closeModal("modal-fuzzy"); doRegister(); }
+
+function doRegister() {
+  const m = getMatch();
+  if (!m) return;
+  const roster   = m.roster||[];
+  const waitlist = m.waitlist||[];
+  const cap      = m.playerCap||PLAYER_CAP_DEFAULT;
+  if ([...roster,...waitlist].some(p=>p.name===playerName)) { showToast("You're already registered!","info"); return; }
+  const entry  = { id:genId(), name:playerName, phone:playerPhone, registeredAt:new Date().toISOString() };
+  const isFull = roster.length >= cap;
+  updateMatch(m => {
+    if (isFull) {
+      return {...m, waitlist:[...m.waitlist,entry]};
+    } else {
+      const newR = [...m.roster,entry];
+      return {...m, roster:newR, status:newR.length>=cap?"full":"published"};
+    }
+  });
+  showToast(isFull ? "Added to waitlist! ⏳" : "You're in! ⚽");
+  fullRender();
+}
+
+function handleWithdraw() {
+  const m = getMatch();
+  if (!m) return;
+  const roster   = m.roster||[];
+  const waitlist = m.waitlist||[];
+  const cap      = m.playerCap||PLAYER_CAP_DEFAULT;
+  const inRoster = roster.some(p=>p.name===playerName);
+  const inWL     = waitlist.some(p=>p.name===playerName);
+  if (!inRoster&&!inWL) return;
+
+  updateMatch(m => {
+    if (inRoster) {
+      let newR = (m.roster||[]).filter(p=>p.name!==playerName);
+      let newW = [...(m.waitlist||[])];
+      if (newW.length>0) {
+        const promoted = newW.shift();
+        newR.push({...promoted, registeredAt:new Date().toISOString()});
+        // trigger promo banner for promoted player
+        try {
+          const stored = localStorage.getItem("soccerName");
+          if (stored===promoted.name) {
+            localStorage.setItem("promotionBanner",JSON.stringify({matchId:m.id,name:promoted.name}));
+          }
+        } catch {}
+      }
+      const newStatus = newR.length>=(m.playerCap||PLAYER_CAP_DEFAULT)?"full":"published";
+      return {...m, roster:newR, waitlist:newW, status:newStatus};
+    } else {
+      return {...m, waitlist:(m.waitlist||[]).filter(p=>p.name!==playerName)};
+    }
+  });
+  showToast("Withdrawn from match.");
+  fullRender();
+}
+
+// ── Share / Announce ─────────────────────────────────────────
+function shareMatch() {
+  const m = getMatch(); if (!m) return;
+  const cap = m.playerCap||PLAYER_CAP_DEFAULT;
+  const left = Math.max(0, cap-(m.roster||[]).length);
+  const msg = `⚽ Match on ${formatDate(m.date)} at ${m.time} — ${m.location}. ${left} spot${left!==1?"s":""} left. Sign up here: ${location.href}`;
+  if (navigator.share) navigator.share({text:msg}).catch(()=>{});
+  else { navigator.clipboard.writeText(msg); showToast("Match link copied! 📋"); }
+}
+function announceMatch() {
+  const m = getMatch(); if (!m) return;
+  const msg = `⚽ Match Alert!\n📅 ${formatDate(m.date)}\n⏰ ${m.time}\n📍 ${m.location}\n📝 ${m.notes||""}\n🔗 Register here: ${location.href}`;
+  navigator.clipboard.writeText(msg); showToast("Announcement copied! 📣");
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function statusColor(s) {
+  return {draft:"#475569",published:"#16a34a",full:"#d97706",locked:"#dc2626",completed:"#7c3aed"}[s]||"#475569";
+}
+
+// ── Main View Render ─────────────────────────────────────────
+function renderMain() {
+  const container = document.getElementById("view-main");
+  const m = getMatch();
+
+  if (!m) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="big-icon">⚽</div>
+      <h2>No match scheduled</h2>
+      <p>Check back soon.</p>
+      ${isGM?`<br><button class="btn-primary" style="max-width:200px;margin:8px auto 0;display:block" onclick="showView('view-gm');renderGM()">+ Create Match</button>`:""}
+    </div>`;
+    return;
+  }
+
+  if (m.status==="draft"&&!isGM) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="big-icon">🕐</div>
+      <h2>Match coming soon</h2>
+      <p>Registration not open yet.</p>
+    </div>`;
+    return;
+  }
+
+  const roster   = m.roster||[];
+  const waitlist = m.waitlist||[];
+  const cap      = m.playerCap||PLAYER_CAP_DEFAULT;
+  const left     = Math.max(0, cap-roster.length);
+  const myRI     = roster.findIndex(p=>p.name===playerName);
+  const myWI     = waitlist.findIndex(p=>p.name===playerName);
+  const isReg    = myRI>=0;
+  const isWL     = myWI>=0;
+  const canAct   = m.status==="published"||m.status==="full";
+
+  // CTA block
+  let ctaHtml = "";
+  if (canAct) {
+    if (!isReg&&!isWL) {
+      ctaHtml = `<div class="cta-area">
+        <button class="btn-register" onclick="handleRegister()">
+          ${m.status==="full"?"Join Waitlist 📋":"Register ⚽"}
+        </button>
+      </div>`;
+    } else if (isReg) {
+      ctaHtml = `<div class="cta-area">
+        <div class="status-card" style="background:rgba(22,163,74,0.12);border:1px solid rgba(22,163,74,0.3)">
+          <span style="font-size:20px">✅</span>
+          <div class="sc-text">
+            <div class="sc-title" style="color:#86efac">You're confirmed!</div>
+            <div class="sc-sub" style="color:#86efac80">Spot #${myRI+1} secured</div>
+          </div>
+          <button class="btn-withdraw" onclick="handleWithdraw()">Withdraw</button>
+        </div>
+      </div>`;
+    } else {
+      ctaHtml = `<div class="cta-area">
+        <div class="status-card" style="background:rgba(217,119,6,0.12);border:1px solid rgba(217,119,6,0.3)">
+          <span style="font-size:20px">⏳</span>
+          <div class="sc-text">
+            <div class="sc-title" style="color:#fde68a">You're #${myWI+1} on the waitlist</div>
+            <div class="sc-sub" style="color:#fde68a80">You'll be notified when a spot opens</div>
+          </div>
+          <button class="btn-withdraw" style="border-color:rgba(217,119,6,0.4);color:#fde68a" onclick="handleWithdraw()">Leave</button>
+        </div>
+      </div>`;
+    }
+  } else if (m.status==="locked") {
+    ctaHtml = `<div class="locked-note">🔒 Registration is closed</div>`;
+  } else if (m.status==="completed") {
+    ctaHtml = `<div class="completed-note">✅ Match completed</div>`;
+  }
+
+  // Roster rows
+  const rosterRows = roster.length===0
+    ? `<div class="empty-list">No players yet — be the first! ⚽</div>`
+    : roster.map((p,i)=>{
+        const isMe = p.name===playerName;
+        const numColors = ["#ffd700","#c0c0c0","#cd7f32"];
+        return `<div class="player-row${isMe?" me":""}">
+          <span class="p-num" style="color:${i<3?numColors[i]:"#334155"}">${i+1}</span>
+          <span class="p-name${isMe?" me":""}">${esc(p.name)}${isMe?" (you)":""}</span>
+          <span class="p-time">${fmtTime(p.registeredAt)}</span>
+        </div>`;
+      }).join("");
+
+  // Waitlist rows
+  const wlRows = waitlist.map((p,i)=>{
+    const isMe = p.name===playerName;
+    return `<div class="player-row${isMe?" me-wl":""}">
+      <span class="p-num" style="color:#d97706">#${i+1}</span>
+      <span class="p-name${isMe?" me-wl":""}">${esc(p.name)}${isMe?" (you)":""}</span>
+      <span class="p-time">${fmtTime(p.registeredAt)}</span>
+    </div>`;
+  }).join("");
+
+  const gmButtons = isGM ? `
+    <button class="btn-share gm-btn" onclick="announceMatch()">📣 Announce</button>
+    <button class="btn-share gm-btn" onclick="showView('view-gm');renderGM()">🎮 GM Panel</button>` : "";
+
+  container.innerHTML = `
+    <!-- Match card -->
+    <div class="match-card">
+      <div class="match-card-top">
+        <div class="match-card-left">
+          <span class="status-pill" style="background:${statusColor(m.status)}">${(m.status||"").toUpperCase()}</span>
+          <div class="match-title">${formatDate(m.date)}</div>
+          <div class="match-meta">
+            <span>⏰ ${esc(m.time)}</span>
+            <span>📍 ${esc(m.location)}</span>
+            ${m.notes?`<span class="match-notes">📝 ${esc(m.notes)}</span>`:""}
+          </div>
+        </div>
+        <div class="counter-box">
+          <div class="counter-num" style="color:${roster.length>=cap?"#f59e0b":"#22c55e"}">${roster.length}</div>
+          <span class="counter-cap">/ ${cap}</span>
+          <div class="counter-label">players</div>
+        </div>
+      </div>
+      ${left>0&&canAct?`<div class="spots-left">${left} spot${left!==1?"s":""} remaining</div>`:""}
+      ${m.status==="full"?`<div class="spots-full">Roster full — new sign-ups go to waitlist</div>`:""}
+    </div>
+
+    ${ctaHtml}
+
+    <!-- Share row -->
+    <div class="share-row">
+      <button class="btn-share" onclick="shareMatch()">📤 Share Match</button>
+      ${gmButtons}
+    </div>
+
+    <!-- Roster -->
+    <div class="list-card">
+      <div class="list-header"><span>Confirmed Players</span><span style="color:#22c55e">${roster.length}/${cap}</span></div>
+      ${rosterRows}
+    </div>
+
+    <!-- Waitlist -->
+    ${waitlist.length>0?`
+    <div class="list-card">
+      <div class="list-header wl"><span>Waitlist</span><span>${waitlist.length} waiting</span></div>
+      ${wlRows}
+    </div>`:""}
+  `;
+}
+
+// ── GM Panel Render ──────────────────────────────────────────
+function renderGM() {
+  const m = getMatch();
+  const container = document.getElementById("gm-content");
+
+  const roster   = m?.roster||[];
+  const waitlist = m?.waitlist||[];
+  const cap      = m?.playerCap||PLAYER_CAP_DEFAULT;
+  const sc = statusColor(m?.status||"draft");
+
+  const matchFormHtml = `
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Match Details</span>
+        ${m?`<button class="btn-sm" onclick="toggleGMEdit()">Edit</button>`:""}
+      </div>
+      ${m?`<div id="gm-match-display">
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:14px;color:#cbd5e1">
+          <span>📅 ${formatDate(m.date)}</span>
+          <span>⏰ ${esc(m.time)}</span>
+          <span>📍 ${esc(m.location)}</span>
+          ${m.notes?`<span style="color:#64748b">📝 ${esc(m.notes)}</span>`:""}
+          <span>👥 Cap: ${cap}</span>
+        </div>
+      </div>`:""}
+      <div id="gm-match-form" style="${m?"display:none":""}">
+        <div class="form-grid">
+          <div class="field"><label>Date</label><input type="date" id="gf-date" value="${esc(m?.date||"")}" /></div>
+          <div class="field"><label>Time</label><input type="time" id="gf-time" value="${esc(m?.time||"19:00")}" /></div>
+          <div class="field full"><label>Location</label><input id="gf-loc" value="${esc(m?.location||"")}" placeholder="e.g. Bishan Stadium, Field 3" /></div>
+          <div class="field full"><label>Notes</label><textarea id="gf-notes">${esc(m?.notes||"")}</textarea></div>
+          <div class="field"><label>Player Cap</label><input type="number" id="gf-cap" value="${cap}" min="1" /></div>
+          <div style="align-self:flex-end;display:flex;gap:8px">
+            <button class="btn-primary" onclick="saveGMMatch()">${m?"Save":"Create"}</button>
+            ${m?`<button class="btn-secondary" onclick="toggleGMEdit()">Cancel</button>`:""}
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  const statusHtml = m?`
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Status: <span class="status-badge" style="background:${sc}">${(m.status||"").toUpperCase()}</span></span>
+      </div>
+      <div class="btn-row-sm">
+        ${m.status==="draft"?`<button class="btn-green" onclick="setStatus('published')">▶ Publish</button>`:""}
+        ${(m.status==="published"||m.status==="full")?`<button class="btn-yellow" onclick="setStatus('locked')">🔒 Lock</button>`:""}
+        ${m.status==="locked"?`<button class="btn-green" onclick="setStatus('published')">🔓 Re-open</button>`:""}
+        ${(m.status==="locked"||m.status==="full")?`<button class="btn-sm" onclick="setStatus('completed')">✓ Complete</button>`:""}
+        ${m.status!=="draft"?`<button class="btn-sm" onclick="setStatus('draft')">Revert to Draft</button>`:""}
+      </div>
+    </div>`:"";
+
+  const exportHtml = m?`
+    <div class="section">
+      <div class="section-header"><span class="section-title">Export & Share</span></div>
+      <div class="btn-row-sm">
+        <button class="btn-sm" onclick="gmExportCSV()">📥 Export CSV</button>
+        <button class="btn-sm" onclick="gmCopyRoster()">📋 Copy Roster</button>
+        <button class="btn-sm" onclick="announceMatch()">📣 Announce</button>
+      </div>
+    </div>`:"";
+
+  const rosterHtml = m?`
+    <div class="section">
+      <div class="section-header"><span class="section-title">Roster (${roster.length}/${cap})</span></div>
+      ${roster.length===0?`<div class="empty-list">No players yet.</div>`:""}
+      ${roster.map((p,i)=>`
+        <div class="gm-row">
+          <span class="gm-num">${i+1}</span>
+          <div class="gm-name-col">
+            <div class="gm-name">${esc(p.name)}</div>
+            ${p.phone?`<div class="gm-phone">📱 ${esc(p.phone)}</div>`:""}
+          </div>
+          <span class="gm-time-col">${fmtTime(p.registeredAt)}</span>
+          <button class="btn-tiny-blue" onclick="gmMoveToWaitlist('${esc(p.id)}')">→ WL</button>
+          <button class="btn-tiny-red"  onclick="gmRemove('${esc(p.id)}','roster')">✕</button>
+        </div>`).join("")}
+    </div>`:"";
+
+  const wlHtml = m?`
+    <div class="section">
+      <div class="section-header"><span class="section-title">Waitlist (${waitlist.length}) — drag to reorder</span></div>
+      ${waitlist.length===0?`<div class="empty-list">Waitlist is empty.</div>`:""}
+      <div id="wl-drag-container">
+        ${waitlist.map((p,i)=>`
+          <div class="gm-row" draggable="true" data-wl-idx="${i}" data-wl-id="${esc(p.id)}"
+               ondragstart="wlDragStart(event,${i})" ondragover="wlDragOver(event,${i})"
+               ondrop="wlDrop(event,${i})" ondragend="wlDragEnd()">
+            <span class="drag-handle">⠿</span>
+            <span class="gm-num" style="color:#d97706">WL${i+1}</span>
+            <div class="gm-name-col">
+              <div class="gm-name">${esc(p.name)}</div>
+              ${p.phone?`<div class="gm-phone">📱 ${esc(p.phone)}</div>`:""}
+            </div>
+            <button class="btn-tiny-blue" onclick="gmMoveToRoster('${esc(p.id)}')">→ Roster</button>
+            <button class="btn-tiny-red"  onclick="gmRemove('${esc(p.id)}','waitlist')">✕</button>
+          </div>`).join("")}
+      </div>
+    </div>`:"";
+
+  const resetHtml = `<div style="text-align:center;margin-top:8px">
+    <button onclick="resetPOC()" style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);color:#fca5a5;border-radius:9px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">
+      ↺ Reset All POC Data
+    </button>
+  </div>`;
+
+  container.innerHTML = matchFormHtml + statusHtml + exportHtml + rosterHtml + wlHtml + resetHtml;
+}
+
+function toggleGMEdit() {
+  const form    = document.getElementById("gm-match-form");
+  const display = document.getElementById("gm-match-display");
+  if (!form||!display) return;
+  const isHidden = form.style.display==="none";
+  form.style.display    = isHidden?"":"none";
+  display.style.display = isHidden?"none":"";
+}
+
+function saveGMMatch() {
+  const date  = document.getElementById("gf-date")?.value||"";
+  const time  = document.getElementById("gf-time")?.value||"19:00";
+  const loc   = document.getElementById("gf-loc")?.value||"";
+  const notes = document.getElementById("gf-notes")?.value||"";
+  const cap   = parseInt(document.getElementById("gf-cap")?.value)||PLAYER_CAP_DEFAULT;
+  const m = getMatch();
+  if (!m) {
+    setMatch({ id:genId(), date, time, location:loc, notes, playerCap:cap,
+      status:"draft", roster:[], waitlist:[], createdAt:new Date().toISOString() });
+    showToast("Match created (Draft)");
+  } else {
+    updateMatch(m=>({...m, date, time, location:loc, notes, playerCap:cap}));
+    showToast("Match updated ✓");
+  }
+  renderGM();
+}
+
+function setStatus(status) {
+  updateMatch(m=>({...m,status}));
+  showToast("Status → "+status);
+  renderGM();
+  if (currentView==="view-main") renderMain();
+}
+
+function gmRemove(id, list) {
+  updateMatch(m=>{
+    const cap = m.playerCap||PLAYER_CAP_DEFAULT;
+    if (list==="roster") {
+      let newR = (m.roster||[]).filter(p=>p.id!==id);
+      let newW = [...(m.waitlist||[])];
+      if (newW.length>0) newR.push({...newW.shift(),registeredAt:new Date().toISOString()});
+      return {...m, roster:newR, waitlist:newW, status:newR.length>=cap?"full":"published"};
+    } else {
+      return {...m, waitlist:(m.waitlist||[]).filter(p=>p.id!==id)};
+    }
+  });
+  showToast("Player removed");
+  renderGM();
+}
+
+function gmMoveToRoster(id) {
+  updateMatch(m=>{
+    const entry = (m.waitlist||[]).find(p=>p.id===id);
+    if (!entry) return m;
+    const newR = [...(m.roster||[]),{...entry,registeredAt:new Date().toISOString()}];
+    const newW = (m.waitlist||[]).filter(p=>p.id!==id);
+    const cap  = m.playerCap||PLAYER_CAP_DEFAULT;
+    return {...m, roster:newR, waitlist:newW, status:newR.length>=cap?"full":"published"};
+  });
+  showToast("Moved to roster ✓"); renderGM();
+}
+
+function gmMoveToWaitlist(id) {
+  updateMatch(m=>{
+    const entry = (m.roster||[]).find(p=>p.id===id);
+    if (!entry) return m;
+    const newR = (m.roster||[]).filter(p=>p.id!==id);
+    const newW = [...(m.waitlist||[]),entry];
+    const cap  = m.playerCap||PLAYER_CAP_DEFAULT;
+    return {...m, roster:newR, waitlist:newW, status:newR.length>=cap?"full":"published"};
+  });
+  showToast("Moved to waitlist"); renderGM();
+}
+
+function gmExportCSV() {
+  const m = getMatch(); if (!m) return;
+  const header = "Name,Phone,Registered At";
+  const rows = (m.roster||[]).map(p=>`"${p.name}","${p.phone||""}","${p.registeredAt?new Date(p.registeredAt).toLocaleString():""}"`);
+  const csv = [header,...rows].join("\n");
+  const blob = new Blob([csv],{type:"text/csv"});
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download=`roster_${m.date}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast("CSV exported ✓");
+}
+
+function gmCopyRoster() {
+  const m = getMatch(); if (!m) return;
+  const text = (m.roster||[]).map((p,i)=>`${i+1}. ${p.name}`).join("\n");
+  navigator.clipboard.writeText(text);
+  showToast("Roster copied ✓");
+}
+
+// ── Drag & Drop (waitlist reorder) ───────────────────────────
+let dragSrc = null;
+function wlDragStart(e,i) {
+  dragSrc = i;
+  e.currentTarget.classList.add("dragging");
+}
+function wlDragOver(e,i) {
+  e.preventDefault();
+  document.querySelectorAll("#wl-drag-container .gm-row").forEach((r,ri)=>{
+    r.classList.toggle("drag-over", ri===i && i!==dragSrc);
+  });
+}
+function wlDrop(e,i) {
+  e.preventDefault();
+  if (dragSrc===null||dragSrc===i) return;
+  updateMatch(m=>{
+    const w = [...(m.waitlist||[])];
+    const [moved] = w.splice(dragSrc,1);
+    w.splice(i,0,moved);
+    return {...m,waitlist:w};
+  });
+  dragSrc=null;
+  renderGM();
+}
+function wlDragEnd() {
+  dragSrc=null;
+  document.querySelectorAll("#wl-drag-container .gm-row").forEach(r=>{
+    r.classList.remove("dragging","drag-over");
+  });
+}
+
+// ── Reset POC ────────────────────────────────────────────────
+function resetPOC() {
+  localStorage.removeItem(STORE_KEY);
+  localStorage.removeItem("promotionBanner");
+  store = defaultStore();
+  saveStore(store);
+  dismissPromo();
+  showToast("POC data reset ✓");
+  renderGM();
+  renderMain();
+}
+
+// ── Full re-render ────────────────────────────────────────────
+function fullRender() {
+  renderMain();
+  if (currentView==="view-gm") renderGM();
+  checkPromoBanner();
+}
+
+// ── Boot ─────────────────────────────────────────────────────
+(function init() {
+  updateHeaderProfile();
+  updateGMButton();
+  checkPromoBanner();
+
+  if (!playerName) openModal("modal-name");
+
+  if (isGM) {
+    showView("view-gm");
+    renderGM();
+  } else {
+    renderMain();
+  }
+})();
+</script>
+</body>
+</html>
